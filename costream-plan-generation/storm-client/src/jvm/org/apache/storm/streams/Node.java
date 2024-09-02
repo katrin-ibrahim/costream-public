@@ -95,11 +95,11 @@ abstract class Node implements Serializable {
         this.componentId = componentId;
     }
 
-    int getParallelism() {
+    public int getParallelism() {
         return parallelism;
     }
 
-    void setParallelism(int parallelism) {
+    public void setParallelism(int parallelism) {
         this.parallelism = parallelism;
     }
 

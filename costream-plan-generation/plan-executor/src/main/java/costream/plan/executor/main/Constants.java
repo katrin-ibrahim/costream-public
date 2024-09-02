@@ -36,6 +36,8 @@ public interface Constants {
         String COMMON_CPU = "common-cpu";
         String COMMON_BANDWIDTH = "common-bandwidth";
         String COMMON_LATENCY = "common-latency";
+
+        String PARALLELISM = "parallelism";
     }
 
     interface HostProperties {

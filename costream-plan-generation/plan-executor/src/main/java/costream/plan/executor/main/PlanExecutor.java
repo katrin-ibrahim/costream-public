@@ -13,6 +13,7 @@ import costream.plan.executor.utils.GraphUtils;
 import org.apache.storm.Config;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.streams.Pair;
+import org.apache.storm.streams.ProcessorNode;
 import org.apache.storm.streams.Stream;
 import org.apache.storm.streams.StreamBuilder;
 import org.apache.storm.tuple.Tuple;
@@ -24,6 +25,8 @@ import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.lang.reflect.Field;
+import java.util.Random;
 
 /**
  * This program generates several random storm plans and executes them on a local cluster.
@@ -255,6 +258,18 @@ public class PlanExecutor extends AbstractPlanExecutor {
             switch (operatorType) {
                 case Constants.Operators.FILTER:
                     stream = applyFilter(stream, spout);
+                    // if we want to avoid setting parallelism for the spout
+                    ProcessorNode node = null;
+                    try {
+                        Field nodeField = stream.getClass().getDeclaredField("node");
+                        nodeField.setAccessible(true);
+                        node = (ProcessorNode) nodeField.get(stream);
+                        int availableCores = Runtime.getRuntime().availableProcessors();
+                        Random random = new Random();
+//                        node.setParallelism(3);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
                     break;
                 case Constants.Operators.WINDOW_AGGREGATE:
                     stream = applyWindowedAggregation(stream, spout);

@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
@@ -342,7 +343,7 @@ public class AbstractPlanExecutor {
      */
     static Stream<DataTuple> applyFilter(Stream<DataTuple> input, Node node) throws ClassNotFoundException {
         Class<?> klass = Class.forName("java.lang." + node.getAttribute("filterClass"));
-        BiFunction<Object, Object, Boolean> func = (BiFunction<Object, Object, Boolean> & Serializable) new FilterOperatorProvider().getFilterFunction((String) node.getAttribute("filterFunction"), klass);
+        BiFunction<Object, Object, Boolean>  func = (BiFunction<Object, Object, Boolean> & Serializable) new FilterOperatorProvider().getFilterFunction((String) node.getAttribute("filterFunction"), klass);
         Object literal;
         if (klass == Integer.class) {
             literal = ((Double) node.getAttribute("literal")).intValue();
@@ -460,9 +461,12 @@ public class AbstractPlanExecutor {
         operator.setTupleWidth(tupleWidth);
         HashMap<String, Object> description = operator.getDescription();
         description.put("id", spout.getAttribute("id"));
+        int parallelism = Integer.parseInt(description.get("parallelism").toString());
         Stream<Tuple> s1 = builder.newStream(operator.getSpoutOperator(queryName), description);
         MapOperator map = new MapOperator(new SyntheticMapper(tupleWidth, queryName));
         map.getDescription().put(Constants.QueryProperties.QUERY, queryName);
+        map.getDescription().put("id", "132334");
+        HashMap desc = map.getDescription();
         return s1.map((AbstractMapFunction<Tuple, DataTuple>) map.getFunction(), map.getDescription());
     }
 

@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.storm.Config;
+import org.apache.storm.Constants;
 import org.apache.storm.annotation.InterfaceStability;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.shade.com.google.common.collect.ArrayListMultimap;
@@ -448,7 +449,8 @@ public class StreamBuilder {
     }
 
     private Collection<List<ProcessorNode>> parallelismGroups(List<ProcessorNode> processorNodes) {
-        return processorNodes.stream().collect(Collectors.groupingBy(Node::getParallelism)).values();
+        Collection<List<ProcessorNode>> res = processorNodes.stream().collect(Collectors.groupingBy(Node::getParallelism)).values();
+        return res;
     }
 
     private void processCurGroup(TopologyBuilder topologyBuilder) {
@@ -494,11 +496,14 @@ public class StreamBuilder {
         return false;
     }
 
+    // todo - verify
     private int getParallelism(List<ProcessorNode> group) {
         Set<Integer> parallelisms = group.stream().map(Node::getParallelism).collect(Collectors.toSet());
 
         if (parallelisms.size() > 1) {
-            throw new IllegalStateException("Current group does not have same parallelism " + group);
+            int maxParallelism = parallelisms.stream().max(Integer::compare).orElse(1);
+            group.forEach(node -> node.setParallelism(maxParallelism));
+            return maxParallelism;
         }
 
         return parallelisms.isEmpty() ? 1 : parallelisms.iterator().next();
@@ -550,6 +555,8 @@ public class StreamBuilder {
         Set<String> componentIds = new HashSet<>();
         for (ProcessorNode node : nodes) {
             BaseProcessor<?> p = (BaseProcessor<?>) node.getProcessor();
+            // verifying if parallelism is set
+            HashMap<String, Object> desc = p.getDescription();
             if (p.getDescription() != null && p.getDescription().get("id") != null) {
                 nodeIds.add((String) p.getDescription().get("id"));
             }
@@ -569,7 +576,6 @@ public class StreamBuilder {
         for (String nodeId : nodeIds) {
             logBolts.add(Pair.of(nodeId, componentId));
         }
-
 
     }
 
