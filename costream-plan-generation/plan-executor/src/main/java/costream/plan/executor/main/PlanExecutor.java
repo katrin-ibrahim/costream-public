@@ -120,6 +120,15 @@ public class PlanExecutor extends AbstractPlanExecutor {
                 case 3:
                     convertThreeWayQuery(builder, spouts, queryName);
                     break;
+                case 4:
+                    convertFourWayQuery(builder, spouts, queryName);
+                    break;
+                case 5:
+                    convertFiveWayQuery(builder, spouts, queryName);
+                    break;
+                case 6:
+                    convertSixWayQuery(builder, spouts, queryName);
+                    break;
                 default:
                     throw new IllegalStateException(spouts.size() + " spouts found, which is not supported");
             }
@@ -366,6 +375,261 @@ public class PlanExecutor extends AbstractPlanExecutor {
             eventualAggregatedStream = applyFilter(eventualAggregatedStream, node0);
         }
 
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        insertSinkToTopo(node0, eventualAggregatedStream);
+    }
+
+    private void convertFourWayQuery(StreamBuilder builder, ArrayList<Node> spouts, String queryName) throws ClassNotFoundException {
+        assert spouts.size() == 4;
+        Node node0 = spouts.get(0);
+        Node node1 = spouts.get(1);
+        Node node2 = spouts.get(2);
+        Node node3 = spouts.get(3);
+
+        Stream<DataTuple> stream0 = insertSpoutToTopo(builder, node0, Constants.Kafka.TOPIC0, this.config, queryName);
+        Stream<DataTuple> stream1 = insertSpoutToTopo(builder, node1, Constants.Kafka.TOPIC1, this.config, queryName);
+        Stream<DataTuple> stream2 = insertSpoutToTopo(builder, node2, Constants.Kafka.TOPIC2, this.config, queryName);
+        Stream<DataTuple> stream3 = insertSpoutToTopo(builder, node3, Constants.Kafka.TOPIC3, this.config, queryName);
+
+        // Apply optional filter on stream0
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            stream0 = applyFilter(stream0, node0);
+        }
+
+        // Apply optional filter on stream1
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node1))) {
+            node1 = GraphUtils.getOperatorSuccessor(node1);
+            stream1 = applyFilter(stream1, node1);
+        }
+
+        // Apply optional filter on stream2
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node2))) {
+            node2 = GraphUtils.getOperatorSuccessor(node2);
+            stream2 = applyFilter(stream2, node2);
+        }
+
+        // Apply optional filter on stream3
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node3))) {
+            node3 = GraphUtils.getOperatorSuccessor(node3);
+            stream3 = applyFilter(stream3, node3);
+        }
+
+        // Apply join on the first two streams
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert (node0.equals(GraphUtils.getOperatorSuccessor(node1)));
+        assert (node0.getAttribute(Constants.OperatorProperties.OPERATOR_TYPE).equals(Constants.Operators.JOIN));
+        Stream<DataTuple> joinedStream1 = joinStreams(stream0, stream1, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the first join and the third stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node2));
+        Stream<DataTuple> joinedStream2 = joinStreams(joinedStream1, stream2, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the second join and the fourth stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node3));
+        Stream<DataTuple> joinedStream3 = joinStreams(joinedStream2, stream3, node0).map(Pair::getSecond);
+
+        // Apply optional aggregation
+        Stream<DataTuple> eventualAggregatedStream;
+        if (GraphUtils.isAggregation(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            eventualAggregatedStream = applyAggregation(joinedStream3, node0);
+        } else {
+            eventualAggregatedStream = joinedStream3;
+        }
+
+        // Apply optional filter
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            eventualAggregatedStream = applyFilter(eventualAggregatedStream, node0);
+        }
+
+        // Final step: add the sink to the topology
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        insertSinkToTopo(node0, eventualAggregatedStream);
+    }
+
+    private void convertFiveWayQuery(StreamBuilder builder, ArrayList<Node> spouts, String queryName) throws ClassNotFoundException {
+        assert spouts.size() == 5;
+        Node node0 = spouts.get(0);
+        Node node1 = spouts.get(1);
+        Node node2 = spouts.get(2);
+        Node node3 = spouts.get(3);
+        Node node4 = spouts.get(4);
+
+        Stream<DataTuple> stream0 = insertSpoutToTopo(builder, node0, Constants.Kafka.TOPIC0, this.config, queryName);
+        Stream<DataTuple> stream1 = insertSpoutToTopo(builder, node1, Constants.Kafka.TOPIC1, this.config, queryName);
+        Stream<DataTuple> stream2 = insertSpoutToTopo(builder, node2, Constants.Kafka.TOPIC2, this.config, queryName);
+        Stream<DataTuple> stream3 = insertSpoutToTopo(builder, node3, Constants.Kafka.TOPIC3, this.config, queryName);
+        Stream<DataTuple> stream4 = insertSpoutToTopo(builder, node4, Constants.Kafka.TOPIC4, this.config, queryName);
+
+        // Apply optional filter on stream0
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            stream0 = applyFilter(stream0, node0);
+        }
+
+        // Apply optional filter on stream1
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node1))) {
+            node1 = GraphUtils.getOperatorSuccessor(node1);
+            stream1 = applyFilter(stream1, node1);
+        }
+
+        // Apply optional filter on stream2
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node2))) {
+            node2 = GraphUtils.getOperatorSuccessor(node2);
+            stream2 = applyFilter(stream2, node2);
+        }
+
+        // Apply optional filter on stream3
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node3))) {
+            node3 = GraphUtils.getOperatorSuccessor(node3);
+            stream3 = applyFilter(stream3, node3);
+        }
+
+        // Apply optional filter on stream4
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node4))) {
+            node4 = GraphUtils.getOperatorSuccessor(node4);
+            stream4 = applyFilter(stream4, node4);
+        }
+
+        // Apply join on the first two streams
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert (node0.equals(GraphUtils.getOperatorSuccessor(node1)));
+        assert (node0.getAttribute(Constants.OperatorProperties.OPERATOR_TYPE).equals(Constants.Operators.JOIN));
+        Stream<DataTuple> joinedStream1 = joinStreams(stream0, stream1, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the first join and the third stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node2));
+        Stream<DataTuple> joinedStream2 = joinStreams(joinedStream1, stream2, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the second join and the fourth stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node3));
+        Stream<DataTuple> joinedStream3 = joinStreams(joinedStream2, stream3, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the third join and the fifth stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node4));
+        Stream<DataTuple> joinedStream4 = joinStreams(joinedStream3, stream4, node0).map(Pair::getSecond);
+
+        // Apply optional aggregation
+        Stream<DataTuple> eventualAggregatedStream;
+        if (GraphUtils.isAggregation(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            eventualAggregatedStream = applyAggregation(joinedStream4, node0);
+        } else {
+            eventualAggregatedStream = joinedStream4;
+        }
+
+        // Apply optional filter
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            eventualAggregatedStream = applyFilter(eventualAggregatedStream, node0);
+        }
+
+        // Final step: add the sink to the topology
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        insertSinkToTopo(node0, eventualAggregatedStream);
+    }
+
+    private void convertSixWayQuery(StreamBuilder builder, ArrayList<Node> spouts, String queryName) throws ClassNotFoundException {
+        assert spouts.size() == 6;
+        Node node0 = spouts.get(0);
+        Node node1 = spouts.get(1);
+        Node node2 = spouts.get(2);
+        Node node3 = spouts.get(3);
+        Node node4 = spouts.get(4);
+        Node node5 = spouts.get(5);
+
+        Stream<DataTuple> stream0 = insertSpoutToTopo(builder, node0, Constants.Kafka.TOPIC0, this.config, queryName);
+        Stream<DataTuple> stream1 = insertSpoutToTopo(builder, node1, Constants.Kafka.TOPIC1, this.config, queryName);
+        Stream<DataTuple> stream2 = insertSpoutToTopo(builder, node2, Constants.Kafka.TOPIC2, this.config, queryName);
+        Stream<DataTuple> stream3 = insertSpoutToTopo(builder, node3, Constants.Kafka.TOPIC3, this.config, queryName);
+        Stream<DataTuple> stream4 = insertSpoutToTopo(builder, node4, Constants.Kafka.TOPIC4, this.config, queryName);
+        Stream<DataTuple> stream5 = insertSpoutToTopo(builder, node5, Constants.Kafka.TOPIC5, this.config, queryName);
+
+        // Apply optional filter on stream0
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            stream0 = applyFilter(stream0, node0);
+        }
+
+        // Apply optional filter on stream1
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node1))) {
+            node1 = GraphUtils.getOperatorSuccessor(node1);
+            stream1 = applyFilter(stream1, node1);
+        }
+
+        // Apply optional filter on stream2
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node2))) {
+            node2 = GraphUtils.getOperatorSuccessor(node2);
+            stream2 = applyFilter(stream2, node2);
+        }
+
+        // Apply optional filter on stream3
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node3))) {
+            node3 = GraphUtils.getOperatorSuccessor(node3);
+            stream3 = applyFilter(stream3, node3);
+        }
+
+        // Apply optional filter on stream4
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node4))) {
+            node4 = GraphUtils.getOperatorSuccessor(node4);
+            stream4 = applyFilter(stream4, node4);
+        }
+
+        // Apply optional filter on stream5
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node5))) {
+            node5 = GraphUtils.getOperatorSuccessor(node5);
+            stream5 = applyFilter(stream5, node5);
+        }
+
+        // Apply join on the first two streams
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert (node0.equals(GraphUtils.getOperatorSuccessor(node1)));
+        assert (node0.getAttribute(Constants.OperatorProperties.OPERATOR_TYPE).equals(Constants.Operators.JOIN));
+        Stream<DataTuple> joinedStream1 = joinStreams(stream0, stream1, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the first join and the third stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node2));
+        Stream<DataTuple> joinedStream2 = joinStreams(joinedStream1, stream2, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the second join and the fourth stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node3));
+        Stream<DataTuple> joinedStream3 = joinStreams(joinedStream2, stream3, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the third join and the fifth stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node4));
+        Stream<DataTuple> joinedStream4 = joinStreams(joinedStream3, stream4, node0).map(Pair::getSecond);
+
+        // Apply join on the result of the fourth join and the sixth stream
+        node0 = GraphUtils.getOperatorSuccessor(node0);
+        assert node0.equals(GraphUtils.getOperatorSuccessor(node5));
+        Stream<DataTuple> joinedStream5 = joinStreams(joinedStream4, stream5, node0).map(Pair::getSecond);
+
+        // Apply optional aggregation
+        Stream<DataTuple> eventualAggregatedStream;
+        if (GraphUtils.isAggregation(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            eventualAggregatedStream = applyAggregation(joinedStream5, node0);
+        } else {
+            eventualAggregatedStream = joinedStream5;
+        }
+
+        // Apply optional filter
+        if (GraphUtils.isFilter(GraphUtils.getOperatorSuccessor(node0))) {
+            node0 = GraphUtils.getOperatorSuccessor(node0);
+            eventualAggregatedStream = applyFilter(eventualAggregatedStream, node0);
+        }
+
+        // Final step: add the sink to the topology
         node0 = GraphUtils.getOperatorSuccessor(node0);
         insertSinkToTopo(node0, eventualAggregatedStream);
     }
