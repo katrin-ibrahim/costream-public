@@ -66,6 +66,9 @@ public interface Constants {
             String LINEAR_AGG_DURATION = "linear-agg-duration";
             String TWO_WAY_JOIN = "two-way-join";
             String THREE_WAY_JOIN = "three-way-join";
+            String FOUR_WAY_JOIN = "four-way-join";
+            String FIVE_WAY_JOIN = "five-way-join";
+            String SIX_WAY_JOIN = "six-way-join";
             String TWO_FILTER_CHAIN = "two-filter-chain";
             String THREE_FILTER_CHAIN = "three-filter-chain";
             String FOUR_FILTER_CHAIN = "four-filter-chain";
@@ -101,7 +104,10 @@ public interface Constants {
         String TOPIC0 = "source0";
         String TOPIC1 = "source1";
         String TOPIC2 = "source2";
-        String[] TOPICS = {TOPIC0, TOPIC1, TOPIC2};
+        String TOPIC3 = "source3";
+        String TOPIC4 = "source4";
+        String TOPIC5 = "source5";
+        String[] TOPICS = {TOPIC0, TOPIC1, TOPIC2, TOPIC3, TOPIC4, TOPIC5};
     }
 
 
