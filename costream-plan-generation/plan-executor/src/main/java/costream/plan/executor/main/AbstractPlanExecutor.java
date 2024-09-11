@@ -462,11 +462,9 @@ public class AbstractPlanExecutor {
         HashMap<String, Object> description = operator.getDescription();
         description.put("id", spout.getAttribute("id"));
         int parallelism = Integer.parseInt(description.get("parallelism").toString());
-        Stream<Tuple> s1 = builder.newStream(operator.getSpoutOperator(queryName), description);
+        Stream<Tuple> s1 = builder.newStream(operator.getSpoutOperator(queryName), parallelism, description);
         MapOperator map = new MapOperator(new SyntheticMapper(tupleWidth, queryName));
         map.getDescription().put(Constants.QueryProperties.QUERY, queryName);
-        map.getDescription().put("id", "132334");
-        HashMap desc = map.getDescription();
         return s1.map((AbstractMapFunction<Tuple, DataTuple>) map.getFunction(), map.getDescription());
     }
 

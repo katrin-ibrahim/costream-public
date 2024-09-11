@@ -61,7 +61,7 @@ import org.apache.storm.tuple.Tuple;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.apache.commons.lang3.tuple.Triple;
 /**
  * A builder for constructing a {@link StormTopology} via storm streams api (DSL).
  */
@@ -76,7 +76,7 @@ public class StreamBuilder {
     private final Map<StreamBolt, BoltDeclarer> streamBolts = new HashMap<>();
     private int statefulProcessorCount = 0;
     private String timestampFieldName = null;
-    private final ArrayList<Pair<String, String>> logBolts = new ArrayList<>();
+    private final ArrayList<Triple<String,String,String>> logBolts = new ArrayList<>();
     private final Config conf;
     private MongoClient mongoClient;
 
@@ -235,18 +235,20 @@ public class StreamBuilder {
         if (!localExecution) {
             MongoDatabase db = mongoClient.getDatabase((String) conf.get("mongo.database"));
             MongoCollection<Document> collection = db.getCollection((String) conf.get("mongo.collection.grouping"));
-            for (Pair<String, String> entry : logBolts) {
+            for (Triple<String, String,String> entry : logBolts) {
                 Document json = new Document();
-                json.put("operator", entry.getFirst());
-                json.put("component", entry.getSecond());
+                json.put("operator", entry.getLeft());
+                json.put("component", entry.getMiddle());
+                json.put("parallelism", entry.getRight());
                 collection.insertOne(json);
             }
             mongoClient.close();
         } else {
-            for (Pair<String, String> entry : logBolts) {
+            for (Triple<String, String, String> entry : logBolts) {
                 JSONObject json = new JSONObject();
-                json.put("operator", entry.getFirst());
-                json.put("component", entry.getSecond());
+                json.put("operator", entry.getLeft());
+                json.put("component", entry.getMiddle());
+                json.put("parallelism", entry.getRight());
                 logger.info(json.toJSONString());
             }
         }
@@ -527,14 +529,14 @@ public class StreamBuilder {
     private void addSpout(TopologyBuilder topologyBuilder, SpoutNode spout) {
         // adding id and group
 
-        logBolts.add(Pair.of((String) spout.getDescription().get("id"), spout.getComponentId()));
+        logBolts.add(Triple.of((String)spout.getDescription().get("id"), spout.getComponentId(), String.valueOf(spout.getParallelism())));
         topologyBuilder.setSpout(spout.getComponentId(), spout.getSpout(), spout.getParallelism());
     }
 
     private void addSink(TopologyBuilder topologyBuilder, SinkNode sinkNode) {
         IComponent bolt = sinkNode.getBolt();
         BoltDeclarer boltDeclarer;
-        logBolts.add(Pair.of((String) sinkNode.getDescription().get("id"), sinkNode.getComponentId()));
+        logBolts.add(Triple.of((String) sinkNode.getDescription().get("id"), sinkNode.getComponentId(), String.valueOf(sinkNode.getParallelism())));
 
         if (bolt instanceof IRichBolt) {
             boltDeclarer = topologyBuilder.setBolt(sinkNode.getComponentId(), (IRichBolt) bolt, sinkNode.getParallelism());
@@ -550,15 +552,16 @@ public class StreamBuilder {
         }
     }
 
+    // todo - log grouping
     private void logBoltGrouping(Iterable<ProcessorNode> nodes) {
-        Set<String> nodeIds = new HashSet<>();
+        Set<Pair<String,String>> nodeIdsParallelism = new HashSet<>();
         Set<String> componentIds = new HashSet<>();
         for (ProcessorNode node : nodes) {
             BaseProcessor<?> p = (BaseProcessor<?>) node.getProcessor();
             // verifying if parallelism is set
             HashMap<String, Object> desc = p.getDescription();
             if (p.getDescription() != null && p.getDescription().get("id") != null) {
-                nodeIds.add((String) p.getDescription().get("id"));
+                nodeIdsParallelism.add(Pair.of((String) p.getDescription().get("id"), String.valueOf(node.getParallelism())));
             }
             if (node.componentId != null) {
                 componentIds.add(node.componentId);
@@ -569,12 +572,12 @@ public class StreamBuilder {
         }
         String componentId = componentIds.iterator().next();
 
-        if (nodeIds.size() == 0) {
+        if (nodeIdsParallelism.size() == 0) {
             throw new RuntimeException("No Node IDs found within all processor nodes of component: " + componentId);
         }
 
-        for (String nodeId : nodeIds) {
-            logBolts.add(Pair.of(nodeId, componentId));
+        for (Pair<String,String>  entry: nodeIdsParallelism) {
+            logBolts.add(Triple.of(entry.getFirst(), componentId, entry.getSecond()));
         }
 
     }

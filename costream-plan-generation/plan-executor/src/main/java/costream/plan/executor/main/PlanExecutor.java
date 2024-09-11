@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.lang.reflect.Field;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -68,7 +69,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
                 logger.error("Queries found at: {} are either empty or already executed.", inputDir);
                 System.exit(0);
             } else {
-                logger.info("{} queries found at: {} ", allGraphs.size(), inputDir);
+                   logger.info("{} queries found at: {} ", Optional.of(allGraphs.size()), inputDir);
             }
 
             // Convert all graphs into Storm topologies
@@ -258,18 +259,6 @@ public class PlanExecutor extends AbstractPlanExecutor {
             switch (operatorType) {
                 case Constants.Operators.FILTER:
                     stream = applyFilter(stream, spout);
-                    // if we want to avoid setting parallelism for the spout
-                    ProcessorNode node = null;
-                    try {
-                        Field nodeField = stream.getClass().getDeclaredField("node");
-                        nodeField.setAccessible(true);
-                        node = (ProcessorNode) nodeField.get(stream);
-                        int availableCores = Runtime.getRuntime().availableProcessors();
-                        Random random = new Random();
-//                        node.setParallelism(3);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
                     break;
                 case Constants.Operators.WINDOW_AGGREGATE:
                     stream = applyWindowedAggregation(stream, spout);

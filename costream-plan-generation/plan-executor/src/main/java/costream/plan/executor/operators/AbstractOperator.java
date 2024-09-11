@@ -23,10 +23,11 @@ public abstract class AbstractOperator<T> {
 
     public AbstractOperator() {
         this.type = this.getClass().getSimpleName();
-        //        Random random = new Random();
-        //        int availableCores = Runtime.getRuntime().availableProcessors();
-        // hardcoded for testing        
-        this.parallelism = 3 ;//random.nextInt(availableCores) + 1;
+        Random random = new Random();
+        int availableCores = Runtime.getRuntime().availableProcessors();
+        this.parallelism = random.nextInt(availableCores) + 1;
+//        // hardcoded for testing
+//        this.parallelism = 5;
     }
 
     /**
