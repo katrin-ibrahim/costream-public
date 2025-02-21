@@ -13,6 +13,7 @@ import costream.plan.executor.utils.GraphUtils;
 import org.apache.storm.Config;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.streams.Pair;
+import org.apache.storm.streams.ProcessorNode;
 import org.apache.storm.streams.Stream;
 import org.apache.storm.streams.StreamBuilder;
 import org.apache.storm.tuple.Tuple;
@@ -24,6 +25,9 @@ import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.lang.reflect.Field;
+import java.util.Optional;
+import java.util.Random;
 
 /**
  * This program generates several random storm plans and executes them on a local cluster.
@@ -65,7 +69,7 @@ public class PlanExecutor extends AbstractPlanExecutor {
                 logger.error("Queries found at: {} are either empty or already executed.", inputDir);
                 System.exit(0);
             } else {
-                logger.info("{} queries found at: {} ", allGraphs.size(), inputDir);
+                   logger.info("{} queries found at: {} ", Optional.of(allGraphs.size()), inputDir);
             }
 
             // Convert all graphs into Storm topologies
