@@ -78,7 +78,7 @@ sudo -u dsps java -jar plan-enumerator-1.0.0.jar --mode linear --num 1 --jvm 125
 Explanation of the flags:
 - `--num`: Number of queries to generate per query type
 - `--output`: Directory where to log shallow query plans
-- `--hosts`: Maximal amount of (virtual) hosts to distribute operators on
+- `--hosts`: Maximal amount of (virtual) hosts to distribute operators on. Note that, in case of joins, the number of hosts must be greater than the number of join operators.
 - `--dur`: Duration that the query should run in seconds
 - `--jvm`: Specify the JVM worker size that is assigned to the worker processes
 - `--mode`: Either `random` or ot of `linear`, `linear-agg-count`, `linear-agg-duration`, `two-way-join`, `three-way-join`.
@@ -86,7 +86,7 @@ Explanation of the flags:
     - In `linear` mode, linear queries are created (source --> filter --> sink)
     - In `linear-agg-count` mode, linear queries with a count-based aggregation are created
     - In `linear-agg-duration` mode, linear queries with a duration-based aggregation are created
-    - `two-way-join` and `three-way-join`-modes create respectively 2-way- and 3-way-join queries.
+    - `two-way-join`, `three-way-join`, `four-way-join`, `five-way-join` and `six-way-join`-modes create respectively 2-way-, 3-way-, 4-way-, 5-way- and 6-way-join queries.
 
 Some other modes create benchmark queries. For exact query descriptions, see also [DSPBench](https://ieeexplore.ieee.org/document/9290133).
 These following modes include randomness: Event Rates, Operator Placements and Harwdare Properties are generated

@@ -4,7 +4,7 @@ import costream.plan.enumerator.enumerator.benchmark.AdvertisementEnumerator;
 import costream.plan.enumerator.enumerator.benchmark.SpikeDetectionEnumerator;
 import costream.plan.enumerator.enumerator.fixed.LinearAggDurationEnumerator;
 import costream.plan.enumerator.enumerator.fixed.ThreeWayJoinEnumerator;
-import costream.plan.enumerator.enumerator.fixed.TwoWayJoinEnumerator;
+import costream.plan.enumerator.enumerator.fixed.*;
 import costream.plan.enumerator.enumerator.AbstractEnumerator;
 import costream.plan.enumerator.enumerator.benchmark.SmartGridEnumerator;
 import costream.plan.enumerator.enumerator.random.FilterChainEnumerator;
@@ -149,6 +149,18 @@ public class PlanEnumerator {
 
                 case Constants.QueryType.FIXED.THREE_WAY_JOIN:
                     enumerators.add(new ThreeWayJoinEnumerator(space));
+                    break;
+
+                case Constants.QueryType.FIXED.FOUR_WAY_JOIN:
+                    enumerators.add(new FourWayJoinEnumerator(space));
+                    break;
+
+                case Constants.QueryType.FIXED.FIVE_WAY_JOIN:
+                    enumerators.add(new FiveWayJoinEnumerator(space));
+                    break;
+
+                case Constants.QueryType.FIXED.SIX_WAY_JOIN:
+                    enumerators.add(new SixWayJoinEnumerator(space));
                     break;
 
                 case Constants.QueryType.FIXED.TWO_FILTER_CHAIN:
